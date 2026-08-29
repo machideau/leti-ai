@@ -1,7 +1,15 @@
-# Clé API locale - ne jamais committer
+# Clés API locales - ne jamais committer
 config.js
+server/.env
+
+# Dépendances
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build
+client/dist/
 
 # Divers
 .DS_Store
 *.log
-node_modules/
