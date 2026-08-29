@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Apple AI Chat - Gemini, Claude, ChatGPT & DeepSeek</title>
+  <title>Let AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -301,6 +301,50 @@
       </div>
 
       <div class="settings-body">
+        <!-- Section 1 : Moteur & Modèle (Gemma 4 / Ollama / API) -->
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <span class="settings-card-icon"></span>
+            <div>
+              <h3>Moteur d'Intelligence & Modèle</h3>
+              <p>Connectez Leti AI à un modèle Hugging Face, local ou intégré.</p>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label for="engineSelect">Moteur Actif</label>
+            <select id="engineSelect" class="apple-select">
+              <option value="huggingface">Hugging Face Inference API</option>
+              <option value="gemma-local">Local / Ollama (LM Studio, Jan)</option>
+              <option value="neural-builtin">Mode Intégré Autonome (Leti AI)</option>
+            </select>
+          </div>
+
+          <!-- Hugging Face -->
+          <div id="hfFields" class="setting-group">
+            <label for="hfModelId">ID du Modèle Hugging Face</label>
+            <input type="text" id="hfModelId"
+              placeholder="google/gemma-3-4b-it"
+              value="google/gemma-3-4b-it">
+            <p class="setting-hint">
+              Exemples : <code>google/gemma-3-4b-it</code>, <code>mistralai/Mistral-7B-Instruct-v0.3</code>, <code>HuggingFaceH4/zephyr-7b-beta</code>
+            </p>
+            <label for="hfToken" style="margin-top: 10px;">Token Hugging Face (HF_TOKEN)</label>
+            <input type="password" id="hfToken" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxx">
+            <p class="setting-hint">
+              Obtenez votre token sur <a href="https://huggingface.co/settings/tokens" target="_blank" style="color: var(--accent-blue)">huggingface.co/settings/tokens</a>. Requis pour les modèles gated (Gemma, Llama…).
+            </p>
+          </div>
+
+          <!-- Local / Ollama -->
+          <div id="gemmaFields" class="setting-group hidden">
+            <label for="gemmaEndpoint">URL du Serveur Local (Ollama)</label>
+            <input type="text" id="gemmaEndpoint" placeholder="http://localhost:11434" value="http://localhost:11434">
+            <label for="gemmaModelName" style="margin-top: 10px;">Nom du Modèle</label>
+            <input type="text" id="gemmaModelName" placeholder="gemma:4b" value="gemma:4b">
+          </div>
+        </div>
+
         <!-- Section 2 : Personnalité & Rôle -->
         <div class="settings-card">
           <div class="settings-card-header">
@@ -368,6 +412,8 @@
     </div>
   </div>
 
+  <!-- config.js est dans .gitignore - contient les clés locales -->
+  <script src="config.js" onerror="window.LETI_CONFIG=window.LETI_CONFIG||{hfToken:'',hfModelId:'google/gemma-3-4b-it'}"></script>
   <script src="app.js"></script>
 </body>
 

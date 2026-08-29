@@ -1,0 +1,7 @@
+# Clé API locale - ne jamais committer
+config.js
+
+# Divers
+.DS_Store
+*.log
+node_modules/

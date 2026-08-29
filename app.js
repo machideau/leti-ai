@@ -17,11 +17,13 @@ class AIChatApp {
     this.recognition = null;
     this.isRecording = false;
     this.theme = localStorage.getItem('leti_theme') || 'dark';
+    const _cfg = (typeof LETI_CONFIG !== 'undefined') ? LETI_CONFIG : {};
     this.settings = JSON.parse(localStorage.getItem('ai_settings') || JSON.stringify({
-      engine: 'neural-builtin',
-      openaiKey: '',
-      anthropicKey: '',
-      geminiKey: '',
+      engine: 'huggingface',
+      hfModelId: _cfg.hfModelId || 'google/gemma-3-4b-it',
+      hfToken: _cfg.hfToken || '',
+      gemmaEndpoint: 'http://localhost:11434',
+      gemmaModelName: 'gemma:4b',
       systemPrompt: 'Tu es Leti AI, un assistant IA expert, bienveillant, clair et très compétent en programmation, sciences et rédaction.'
     }));
 
@@ -76,10 +78,12 @@ class AIChatApp {
       btnCancelSettings: document.getElementById('btnCancelSettings'),
       btnSaveSettings: document.getElementById('btnSaveSettings'),
       engineSelect: document.getElementById('engineSelect'),
-      customApiFields: document.getElementById('customApiFields'),
-      openaiKey: document.getElementById('openaiKey'),
-      anthropicKey: document.getElementById('anthropicKey'),
-      geminiKey: document.getElementById('geminiKey'),
+      hfFields: document.getElementById('hfFields'),
+      hfModelId: document.getElementById('hfModelId'),
+      hfToken: document.getElementById('hfToken'),
+      gemmaFields: document.getElementById('gemmaFields'),
+      gemmaEndpoint: document.getElementById('gemmaEndpoint'),
+      gemmaModelName: document.getElementById('gemmaModelName'),
       systemPromptInput: document.getElementById('systemPromptInput'),
       checkSoundEnabled: document.getElementById('checkSoundEnabled'),
     };
@@ -483,6 +487,22 @@ class AIChatApp {
   }
 
   async generateAIResponse(prompt, aiMsg, chat) {
+    const engine = this.settings.engine || 'neural-builtin';
+
+    // Créer la bulle IA dans le DOM avant de streamer
+    const aiBubble = this.appendAIMessageElement(aiMsg.id);
+
+    if (engine === 'huggingface') {
+      await this.callHuggingFaceAPI(prompt, aiMsg, aiBubble, chat);
+      return;
+    }
+
+    if (engine === 'gemma-local') {
+      await this.callOllamaAPI(prompt, aiMsg, aiBubble, chat);
+      return;
+    }
+
+    // --- Mode intégré autonome ---
     const isCodeRequest = /crée|code|application|jeu|horloge|widget|html|css|javascript|canvas|clone/i.test(prompt);
     const isMathRequest = /calcul|série|fourier|math|dérivée|intégrale|équation|\$|matrice/i.test(prompt);
     const isGreeting = /^(salut|bonjour|bonsoir|coucou|hello|hi|hey)[\s\.,!]*$/i.test(prompt.trim());
@@ -590,24 +610,160 @@ Concernant votre demande :
 Je suis prêt à vous apporter une réponse détaillée ou à développer une solution sur mesure. Souhaitez-vous explorer un aspect particulier ou créer un projet interactif dans le volet Canvas ?`;
     }
 
-    // Créer et ajouter le message IA au DOM
-    const aiBubble = this.appendAIMessageElement(aiMsg.id);
-
-    // Streaming fluide direct sans re-render complet
+    // Streaming fluide intégré
     let currentLength = 0;
     const chunkSize = 8;
-
     while (currentLength < responseText.length) {
       currentLength += chunkSize;
       aiMsg.content = responseText.slice(0, currentLength);
-      if (aiBubble) {
-        aiBubble.innerHTML = this.parseMarkdown(aiMsg.content);
-      }
+      if (aiBubble) aiBubble.innerHTML = this.parseMarkdown(aiMsg.content);
       this.scrollToBottom();
       await new Promise(r => setTimeout(r, 12));
     }
+    this.highlightCodeBlocks();
+    this.renderMathFormulas();
+    this.attachMessageActions();
+    this.saveConversations();
+  }
 
-    // Traitement final (coloration, math, actions) une seule fois à la fin
+  /* ==========================================================================
+     Hugging Face Inference API (streaming SSE)
+     ========================================================================== */
+  async callHuggingFaceAPI(prompt, aiMsg, aiBubble, chat) {
+    const modelId = this.settings.hfModelId || 'google/gemma-3-4b-it';
+    const token   = this.settings.hfToken || '';
+    const system  = this.settings.systemPrompt || 'Tu es Leti AI, un assistant IA expert et bienveillant.';
+    const url = `https://api-inference.huggingface.co/models/${modelId}/v1/chat/completions`;
+
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+
+    const body = JSON.stringify({
+      model: modelId,
+      messages: [
+        { role: 'system', content: system },
+        ...chat.messages
+          .filter(m => m.content && m.id !== aiMsg.id)
+          .map(m => ({ role: m.role, content: m.content })),
+        { role: 'user', content: prompt }
+      ],
+      stream: true,
+      max_tokens: 1024,
+      temperature: 0.7
+    });
+
+    try {
+      const resp = await fetch(url, { method: 'POST', headers, body });
+
+      if (!resp.ok) {
+        const err = await resp.text();
+        if (resp.status === 503) {
+          // Modèle en cours de chargement côté HF
+          aiMsg.content = `Le modèle **${modelId}** est en cours de chargement sur les serveurs Hugging Face. Veuillez patienter quelques secondes puis réessayer.`;
+        } else if (resp.status === 401) {
+          aiMsg.content = `Token Hugging Face invalide ou manquant. Rendez-vous dans les **Paramètres** pour ajouter votre token.`;
+        } else if (resp.status === 404) {
+          aiMsg.content = `Modèle introuvable : \`${modelId}\`. Vérifiez l'identifiant dans les **Paramètres**.`;
+        } else {
+          aiMsg.content = `Erreur Hugging Face (${resp.status}) : ${err.slice(0, 200)}`;
+        }
+        if (aiBubble) aiBubble.innerHTML = this.parseMarkdown(aiMsg.content);
+        this.highlightCodeBlocks();
+        this.attachMessageActions();
+        this.saveConversations();
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      aiMsg.content = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          const raw = line.slice(5).trim();
+          if (raw === '[DONE]') break;
+          try {
+            const json = JSON.parse(raw);
+            const delta = json.choices?.[0]?.delta?.content || '';
+            if (delta) {
+              aiMsg.content += delta;
+              if (aiBubble) aiBubble.innerHTML = this.parseMarkdown(aiMsg.content);
+              this.scrollToBottom();
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (e) {
+      aiMsg.content = `Impossible de contacter l'API Hugging Face. Vérifiez votre connexion et les **Paramètres** de l'application.\n\n_Détail : ${e.message}_`;
+      if (aiBubble) aiBubble.innerHTML = this.parseMarkdown(aiMsg.content);
+    }
+
+    this.highlightCodeBlocks();
+    this.renderMathFormulas();
+    this.attachMessageActions();
+    this.saveConversations();
+  }
+
+  /* ==========================================================================
+     Ollama / Local (compatible OpenAI API)
+     ========================================================================== */
+  async callOllamaAPI(prompt, aiMsg, aiBubble, chat) {
+    const base   = (this.settings.gemmaEndpoint || 'http://localhost:11434').replace(/\/$/, '');
+    const model  = this.settings.gemmaModelName || 'gemma:4b';
+    const system = this.settings.systemPrompt || 'Tu es Leti AI, un assistant IA expert.';
+    const url    = `${base}/api/chat`;
+
+    const body = JSON.stringify({
+      model,
+      stream: true,
+      messages: [
+        { role: 'system', content: system },
+        ...chat.messages
+          .filter(m => m.content && m.id !== aiMsg.id)
+          .map(m => ({ role: m.role, content: m.content })),
+        { role: 'user', content: prompt }
+      ]
+    });
+
+    try {
+      const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      aiMsg.content = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const text = decoder.decode(value, { stream: true });
+        for (const line of text.split('\n').filter(Boolean)) {
+          try {
+            const json = JSON.parse(line);
+            const delta = json.message?.content || '';
+            if (delta) {
+              aiMsg.content += delta;
+              if (aiBubble) aiBubble.innerHTML = this.parseMarkdown(aiMsg.content);
+              this.scrollToBottom();
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (e) {
+      aiMsg.content = `Impossible de contacter Ollama sur \`${base}\`. Vérifiez que le serveur est bien démarré.\n\n_Détail : ${e.message}_`;
+      if (aiBubble) aiBubble.innerHTML = this.parseMarkdown(aiMsg.content);
+    }
+
     this.highlightCodeBlocks();
     this.renderMathFormulas();
     this.attachMessageActions();
@@ -827,10 +983,13 @@ Je suis prêt à vous apporter une réponse détaillée ou à développer une so
     if (this.dom.btnCloseSettings) this.dom.btnCloseSettings.onclick = () => this.closeSettingsModal();
     if (this.dom.btnCancelSettings) this.dom.btnCancelSettings.onclick = () => this.closeSettingsModal();
     if (this.dom.btnSaveSettings) this.dom.btnSaveSettings.onclick = () => this.saveSettings();
-    if (this.dom.engineSelect && this.dom.customApiFields) {
-      this.dom.engineSelect.onchange = () => {
-        this.dom.customApiFields.classList.toggle('hidden', this.dom.engineSelect.value !== 'custom-api');
+    if (this.dom.engineSelect) {
+      const updateEngineVisibility = () => {
+        const val = this.dom.engineSelect.value;
+        if (this.dom.hfFields)    this.dom.hfFields.classList.toggle('hidden', val !== 'huggingface');
+        if (this.dom.gemmaFields) this.dom.gemmaFields.classList.toggle('hidden', val !== 'gemma-local');
       };
+      this.dom.engineSelect.onchange = updateEngineVisibility;
     }
 
     const btnClearAll = document.getElementById('btnClearAllData');
@@ -910,13 +1069,17 @@ Je suis prêt à vous apporter une réponse détaillée ou à développer une so
   openSettingsModal() {
     if (!this.dom.settingsModal) return;
     this.dom.settingsModal.classList.remove('hidden');
-    if (this.dom.engineSelect) this.dom.engineSelect.value = this.settings.engine;
-    if (this.dom.customApiFields) this.dom.customApiFields.classList.toggle('hidden', this.settings.engine !== 'custom-api');
-    if (this.dom.openaiKey) this.dom.openaiKey.value = this.settings.openaiKey || '';
-    if (this.dom.anthropicKey) this.dom.anthropicKey.value = this.settings.anthropicKey || '';
-    if (this.dom.geminiKey) this.dom.geminiKey.value = this.settings.geminiKey || '';
+    const engine = this.settings.engine || 'huggingface';
+    if (this.dom.engineSelect) this.dom.engineSelect.value = engine;
+    if (this.dom.hfModelId) this.dom.hfModelId.value = this.settings.hfModelId || 'google/gemma-3-4b-it';
+    if (this.dom.hfToken) this.dom.hfToken.value = this.settings.hfToken || '';
+    if (this.dom.gemmaEndpoint) this.dom.gemmaEndpoint.value = this.settings.gemmaEndpoint || 'http://localhost:11434';
+    if (this.dom.gemmaModelName) this.dom.gemmaModelName.value = this.settings.gemmaModelName || 'gemma:4b';
     if (this.dom.systemPromptInput) this.dom.systemPromptInput.value = this.settings.systemPrompt || '';
     if (this.dom.checkSoundEnabled) this.dom.checkSoundEnabled.checked = this.soundEnabled;
+    // Visibilité des panneaux
+    if (this.dom.hfFields)    this.dom.hfFields.classList.toggle('hidden', engine !== 'huggingface');
+    if (this.dom.gemmaFields) this.dom.gemmaFields.classList.toggle('hidden', engine !== 'gemma-local');
   }
 
   closeSettingsModal() {
@@ -926,12 +1089,13 @@ Je suis prêt à vous apporter une réponse détaillée ou à développer une so
   saveSettings() {
     this.soundEnabled = this.dom.checkSoundEnabled ? this.dom.checkSoundEnabled.checked : true;
     this.settings = {
-      engine: this.dom.engineSelect ? this.dom.engineSelect.value : 'neural-builtin',
-      openaiKey: this.dom.openaiKey ? this.dom.openaiKey.value.trim() : '',
-      anthropicKey: this.dom.anthropicKey ? this.dom.anthropicKey.value.trim() : '',
-      geminiKey: this.dom.geminiKey ? this.dom.geminiKey.value.trim() : '',
-      systemPrompt: this.dom.systemPromptInput ? this.dom.systemPromptInput.value.trim() : '',
-      soundEnabled: this.soundEnabled
+      engine:          this.dom.engineSelect  ? this.dom.engineSelect.value.trim()   : 'huggingface',
+      hfModelId:       this.dom.hfModelId     ? this.dom.hfModelId.value.trim()       : 'google/gemma-3-4b-it',
+      hfToken:         this.dom.hfToken       ? this.dom.hfToken.value.trim()         : '',
+      gemmaEndpoint:   this.dom.gemmaEndpoint ? this.dom.gemmaEndpoint.value.trim()   : 'http://localhost:11434',
+      gemmaModelName:  this.dom.gemmaModelName? this.dom.gemmaModelName.value.trim()  : 'gemma:4b',
+      systemPrompt:    this.dom.systemPromptInput ? this.dom.systemPromptInput.value.trim() : '',
+      soundEnabled:    this.soundEnabled
     };
     localStorage.setItem('ai_settings', JSON.stringify(this.settings));
     this.closeSettingsModal();
