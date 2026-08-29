@@ -7,6 +7,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const hfModelId = ref('google/gemma-3-4b-it')
   const systemPrompt = ref('Tu es Leti AI, un assistant IA expert, bienveillant, clair et très compétent en programmation, sciences et rédaction.')
   const soundEnabled = ref(true)
+  const sidebarOpen = ref(false)
 
   // Charger depuis localStorage
   const saved = JSON.parse(localStorage.getItem('ai_settings') || '{}')
@@ -15,16 +16,9 @@ export const useSettingsStore = defineStore('settings', () => {
   if (saved.systemPrompt) systemPrompt.value = saved.systemPrompt
   if (saved.soundEnabled !== undefined) soundEnabled.value = saved.soundEnabled
 
-  // Appliquer le thème au DOM
-  function applyTheme(t) {
-    document.documentElement.setAttribute('data-theme', t)
-    localStorage.setItem('leti_theme', t)
-  }
-  applyTheme(theme.value)
-
   function toggleTheme() {
     theme.value = theme.value === 'dark' ? 'light' : 'dark'
-    applyTheme(theme.value)
+    localStorage.setItem('leti_theme', theme.value)
   }
 
   function save() {
@@ -37,5 +31,5 @@ export const useSettingsStore = defineStore('settings', () => {
     localStorage.setItem('ai_settings', JSON.stringify(data))
   }
 
-  return { theme, engine, hfModelId, systemPrompt, soundEnabled, toggleTheme, save }
+  return { theme, engine, hfModelId, systemPrompt, soundEnabled, sidebarOpen, toggleTheme, save }
 })

@@ -1,9 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useSettingsStore } from './settings.js'
-import { marked } from 'marked'
-
-marked.setOptions({ breaks: true, gfm: true })
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2)
