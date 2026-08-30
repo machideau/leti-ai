@@ -96,7 +96,10 @@ export const useChatStore = defineStore('chat', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          modelId: settings.hfModelId,
+          modelId:      settings.hfModelId,
+          hfToken:      settings.hfToken || undefined,
+          maxTokens:    settings.maxTokens,
+          temperature:  settings.temperature,
           systemPrompt: settings.systemPrompt,
           messages: conv.messages
             .filter(m => m.content && m.id !== aiMsg.id)

@@ -3,17 +3,19 @@ import { Router } from 'express';
 const router = Router();
 
 router.post('/', async (req, res) => {
-  const { messages, modelId, systemPrompt } = req.body;
-  const token    = process.env.HF_TOKEN;
-  const model    = modelId || process.env.HF_MODEL_ID || 'google/gemma-3-4b-it';
-  const system   = systemPrompt || 'Tu es Leti AI, un assistant IA expert, bienveillant et très compétent.';
-  const url      = `https://router.huggingface.co/v1/chat/completions`;
+  const { messages, modelId, systemPrompt, hfToken, maxTokens, temperature } = req.body;
+  const token       = hfToken || process.env.HF_TOKEN;
+  const model       = modelId || process.env.HF_MODEL_ID || 'google/gemma-3-4b-it';
+  const system      = systemPrompt || 'Tu es Leti AI, un assistant IA expert, bienveillant et très compétent.';
+  const max_tokens  = maxTokens  || 1024;
+  const temp        = temperature !== undefined ? temperature : 0.7;
+  const url         = `https://router.huggingface.co/v1/chat/completions`;
 
   const body = JSON.stringify({
     model,
     stream: true,
-    max_tokens: 1024,
-    temperature: 0.7,
+    max_tokens,
+    temperature: temp,
     messages: [
       { role: 'system', content: system },
       ...(messages || [])
