@@ -816,6 +816,7 @@ pre code.hljs {
    Zone de Saisie Inférieure (Prompt Area)
    ========================================================================== */
 .input-area-wrapper {
+  position: relative;
   max-width: 800px;
   width: 100%;
   margin: 0 auto;
@@ -850,27 +851,69 @@ pre code.hljs {
   gap: 6px;
   flex-wrap: wrap;
   padding-bottom: 4px;
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 2px;
 }
 
 .attachment-chip {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--glass-border);
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 11px;
+  padding: 4px 8px 4px 5px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  max-width: 180px;
+  transition: background 0.15s ease;
 }
 
-.attachment-chip-remove {
-  cursor: pointer;
+.attachment-chip:hover {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.chip-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.chip-remove {
+  background: transparent;
+  border: none;
   color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
 }
 
-.attachment-chip-remove:hover {
+.chip-remove:hover {
   color: var(--accent-red);
 }
+
+/* Drag & drop */
+.input-box.drag-over {
+  border-color: var(--accent-blue);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 122, 255, 0.3);
+  background: rgba(0, 122, 255, 0.05);
+}
+
 
 .prompt-textarea {
   width: 100%;
@@ -918,9 +961,94 @@ pre code.hljs {
 }
 
 .action-btn.recording {
-  background: rgba(255, 59, 48, 0.2);
+  background: rgba(255, 59, 48, 0.18);
   color: var(--accent-red);
-  animation: pulse 1s infinite alternate;
+}
+
+.action-btn.recording:hover {
+  background: rgba(255, 59, 48, 0.3);
+}
+
+/* Bordure recording sur l'input-box */
+.input-box.recording {
+  border-color: rgba(255, 59, 48, 0.6);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 59, 48, 0.25);
+}
+
+/* ---- Indicateur de dictée vocale ---- */
+.voice-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 2px 2px;
+  flex-wrap: wrap;
+}
+
+.voice-waves {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
+}
+
+.wave-bar {
+  display: block;
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent-red);
+  animation: waveAnim 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes waveAnim {
+  0%   { height: 3px; opacity: 0.5; }
+  100% { height: 18px; opacity: 1; }
+}
+
+.voice-label {
+  font-size: 12px;
+  color: var(--accent-red);
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.voice-interim {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  font-style: italic;
+  width: 100%;
+  padding-left: 2px;
+  min-height: 16px;
+}
+
+/* ---- Toast erreur micro ---- */
+.voice-toast {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 59, 48, 0.92);
+  color: #fff;
+  font-size: 12.5px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  max-width: 90vw;
+  white-space: normal;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  z-index: 50;
+  pointer-events: none;
+}
+
+/* Transition toast */
+.toast-enter-active, .toast-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.toast-enter-from, .toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(6px);
 }
 
 .btn-send {

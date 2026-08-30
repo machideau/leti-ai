@@ -59,18 +59,36 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function sendMessage(text) {
-    if (!text.trim() || isStreaming.value) return
-    const chat = activeChat.value
+  async function sendMessage(text, images = []) {
+    if (!text.trim() && images.length === 0) return
+    if (isStreaming.value) return
+    const conv = activeChat.value
 
-    // Message utilisateur
-    chat.messages.push({ id: uid(), role: 'user', content: text })
-    updateTitle(chat, text)
+    // Construire le contenu du message utilisateur
+    let userContent
+    if (images.length > 0) {
+      // Format multimodal : array de parts { type, text | image_url }
+      userContent = []
+      if (text.trim()) userContent.push({ type: 'text', text: text.trim() })
+      for (const img of images) {
+        userContent.push({
+          type: 'image_url',
+          image_url: { url: img.dataUrl }
+        })
+      }
+    } else {
+      userContent = text.trim()
+    }
+
+    // Stocker le message utilisateur (toujours en string pour l'affichage)
+    const displayText = text.trim() || images.map(i => `[Image: ${i.name || 'image'}]`).join(' ')
+    conv.messages.push({ id: uid(), role: 'user', content: displayText, _rawContent: userContent })
+    updateTitle(conv, displayText)
     save()
 
     // Placeholder IA
     const aiMsg = { id: uid(), role: 'assistant', content: '' }
-    chat.messages.push(aiMsg)
+    conv.messages.push(aiMsg)
     isStreaming.value = true
 
     try {
@@ -80,9 +98,9 @@ export const useChatStore = defineStore('chat', () => {
         body: JSON.stringify({
           modelId: settings.hfModelId,
           systemPrompt: settings.systemPrompt,
-          messages: chat.messages
+          messages: conv.messages
             .filter(m => m.content && m.id !== aiMsg.id)
-            .map(m => ({ role: m.role, content: m.content }))
+            .map(m => ({ role: m.role, content: m._rawContent || m.content }))
         })
       })
 
