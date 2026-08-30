@@ -709,6 +709,13 @@ pre code.hljs {
   padding-left: 2px;
 }
 
+/* Actions bulle utilisateur (alignées à droite) */
+.message-row.user .user-actions {
+  padding-left: 0;
+  padding-right: 4px;
+  justify-content: flex-end;
+}
+
 .message-row:hover .message-actions {
   opacity: 1;
 }
@@ -731,6 +738,79 @@ pre code.hljs {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-main);
 }
+
+/* ---- Mode édition inline ---- */
+.edit-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 240px;
+  max-width: 600px;
+  animation: fadeIn 0.15s ease;
+}
+
+.edit-textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1.5px solid var(--glass-border-focus);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+  transition: border-color 0.2s ease;
+}
+
+.edit-textarea:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.edit-btn {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.edit-save {
+  background: var(--accent-blue);
+  color: #fff;
+}
+
+.edit-save:hover {
+  background: #0066dc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
+}
+
+.edit-cancel {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  border: 1px solid var(--glass-border);
+}
+
+.edit-cancel:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--text-main);
+}
+
 
 /* ==========================================================================
    Zone de Saisie Inférieure (Prompt Area)

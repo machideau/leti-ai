@@ -137,6 +137,19 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  async function editMessage(msgId, newText) {
+    const trimmed = (newText || '').trim()
+    if (!trimmed || isStreaming.value) return
+    const conv = activeChat.value
+    const idx = conv.messages.findIndex(m => m.id === msgId)
+    if (idx === -1) return
+    // Supprimer le message édité et tout ce qui suit (réponse IA incluse)
+    conv.messages.splice(idx)
+    save()
+    // Appel direct à sendMessage avec le texte capturé avant le splice
+    await sendMessage(trimmed)
+  }
+
   function clearAll() {
     conversations.value = []
     newChat()
@@ -145,6 +158,6 @@ export const useChatStore = defineStore('chat', () => {
   return {
     conversations, activeId, activeChat, isStreaming,
     canvasHtml, showCanvas,
-    newChat, selectChat, deleteChat, sendMessage, clearAll
+    newChat, selectChat, deleteChat, sendMessage, editMessage, clearAll
   }
 })
