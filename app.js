@@ -633,7 +633,7 @@ Je suis prêt à vous apporter une réponse détaillée ou à développer une so
     const modelId = this.settings.hfModelId || 'google/gemma-3-4b-it';
     const token   = this.settings.hfToken || '';
     const system  = this.settings.systemPrompt || 'Tu es Leti AI, un assistant IA expert et bienveillant.';
-    const url = `https://api-inference.huggingface.co/models/${modelId}/v1/chat/completions`;
+    const url = `https://router.huggingface.co/v1/chat/completions`;
 
     const headers = {
       'Content-Type': 'application/json',

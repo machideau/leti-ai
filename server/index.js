@@ -24,7 +24,11 @@ app.get('*', (_req, res) => {
   res.sendFile(join(__dirname, '../client/dist/index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Leti AI server running on http://localhost:${PORT}`);
-  console.log(`Model: ${process.env.HF_MODEL_ID}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Leti AI server running on http://localhost:${PORT}`);
+    console.log(`Model: ${process.env.HF_MODEL_ID}`);
+  });
+}
+
+export default app;

@@ -87,10 +87,17 @@ export const useChatStore = defineStore('chat', () => {
       })
 
       if (!resp.ok) {
-        const err = await resp.json()
-        aiMsg.content = err.error || `Erreur serveur (${resp.status})`
-        save()
-        return
+        const text = await resp.text();
+        let errorMessage = `Erreur serveur (${resp.status})`;
+        try {
+          const err = JSON.parse(text);
+          if (err.error) errorMessage = err.error;
+        } catch (_) {
+          if (text) errorMessage += `\n${text.slice(0, 200)}`;
+        }
+        aiMsg.content = errorMessage;
+        save();
+        return;
       }
 
       const reader = resp.body.getReader()

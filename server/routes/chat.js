@@ -7,7 +7,7 @@ router.post('/', async (req, res) => {
   const token    = process.env.HF_TOKEN;
   const model    = modelId || process.env.HF_MODEL_ID || 'google/gemma-3-4b-it';
   const system   = systemPrompt || 'Tu es Leti AI, un assistant IA expert, bienveillant et très compétent.';
-  const url      = `https://router.huggingface.co/hf-inference/models/${model}/v1/chat/completions`;
+  const url      = `https://router.huggingface.co/v1/chat/completions`;
 
   const body = JSON.stringify({
     model,
@@ -31,6 +31,7 @@ router.post('/', async (req, res) => {
       body
     });
   } catch (e) {
+    console.error('Fetch error:', e);
     return res.status(502).json({ error: `Impossible de contacter Hugging Face : ${e.message}` });
   }
 
