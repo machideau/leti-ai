@@ -1,5 +1,5 @@
 <template>
-    <aside class="sidebar" id="sidebar" :class="{ 'mobile-open': settings.sidebarOpen }">
+    <aside class="sidebar" id="sidebar" :class="{ 'open': settings.sidebarOpen }">
       <div class="sidebar-header">
         <div class="app-brand">
           <div class="brand-icon">
@@ -45,7 +45,7 @@
                 :key="conv.id"
                 class="chat-item"
                 :class="{ active: conv.id === chat.activeId }"
-                @click="chat.selectChat(conv.id)"
+                @click="selectConv(conv.id)"
             >
                 <span class="chat-item-title">{{ conv.title }}</span>
                 <div class="chat-item-actions">
@@ -81,4 +81,12 @@ import { useSettingsStore } from '../stores/settings.js'
 const chat = useChatStore()
 const settings = useSettingsStore()
 const openSettings = inject('openSettings')
+
+function selectConv(id) {
+  chat.selectChat(id)
+  // Fermer la sidebar sur mobile après sélection
+  if (window.innerWidth <= 768) {
+    settings.sidebarOpen = false
+  }
+}
 </script>

@@ -7,7 +7,7 @@
 
   <div class="app-layout" id="appLayout">
     <ChatSidebar />
-    <div class="sidebar-overlay" id="sidebarOverlay" :class="{ visible: settings.sidebarOpen }" @click="settings.sidebarOpen = false"></div>
+    <div class="sidebar-overlay" id="sidebarOverlay" :class="{ active: settings.sidebarOpen }" @click="settings.sidebarOpen = false"></div>
     <ChatWindow />
     <CanvasPanel v-if="chat.showCanvas" />
   </div>

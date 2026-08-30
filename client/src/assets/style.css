@@ -1435,8 +1435,10 @@ input:checked + .slider:before {
 }
 
 /* ==========================================================================
-   Responsive Breakpoints (Mobile & Tablet)
+   Responsive Breakpoints
    ========================================================================== */
+
+/* Overlay mobile (fond sombre derrière la sidebar) */
 .sidebar-overlay {
   position: fixed;
   inset: 0;
@@ -1447,6 +1449,7 @@ input:checked + .slider:before {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
+  display: none; /* masqué sur desktop */
 }
 
 .sidebar-overlay.active {
@@ -1455,6 +1458,35 @@ input:checked + .slider:before {
 }
 
 @media (max-width: 768px) {
+  .sidebar-overlay {
+    display: block;
+  }
+}
+
+/* ── Bouton hamburger : masqué sur desktop ── */
+.mobile-menu-btn {
+  display: none;
+}
+
+/* ── Tablette (≤ 900px) ── */
+@media (max-width: 900px) {
+  :root {
+    --sidebar-width: 240px;
+    --canvas-width: 380px;
+  }
+
+  .chat-feed {
+    max-width: 100%;
+  }
+
+  .input-area-wrapper {
+    max-width: 100%;
+  }
+}
+
+/* ── Mobile (≤ 768px) ── */
+@media (max-width: 768px) {
+  /* Sidebar : drawer off-canvas */
   .sidebar {
     position: fixed;
     top: 0;
@@ -1463,49 +1495,120 @@ input:checked + .slider:before {
     transform: translateX(-100%);
     margin-left: 0 !important;
     width: 280px;
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.6);
+    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.6);
+    z-index: 30;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .sidebar.open {
     transform: translateX(0);
   }
 
+  /* Hamburger visible sur mobile */
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  /* Canvas : plein écran sur mobile */
   .canvas-pane {
     position: fixed;
     inset: 0;
     width: 100% !important;
     z-index: 40;
+    border-left: none;
   }
 
+  /* Zone messages */
   .messages-container {
-    padding: 14px 10px;
+    padding: 12px 8px;
+    gap: 14px;
+  }
+
+  .chat-feed {
+    max-width: 100%;
     gap: 16px;
   }
 
+  /* Bulles */
   .message-body {
-    max-width: 90%;
+    max-width: 88%;
   }
 
+  .message-row {
+    gap: 8px;
+  }
+
+  /* Header */
+  .chat-header {
+    padding: 8px 12px;
+    min-height: 48px;
+  }
+
+  /* Zone de saisie */
   .input-area-wrapper {
-    padding: 0 10px 10px;
+    padding: 0 8px 10px;
+    max-width: 100%;
   }
 
+  /* Welcome screen */
+  .welcome-screen {
+    padding: 20px 16px;
+  }
+
+  .welcome-title {
+    font-size: clamp(20px, 6vw, 28px);
+  }
+
+  .welcome-subtitle {
+    font-size: 13px;
+  }
+
+  /* Mode édition inline */
+  .edit-wrapper {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* Indicateur voix */
+  .voice-indicator {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .voice-toast {
+    font-size: 12px;
+    padding: 6px 12px;
+    white-space: normal;
+    width: 90%;
+  }
+
+  /* Modale settings : bottom sheet */
   .modal-backdrop {
     padding: 0;
     align-items: flex-end;
   }
 
   .settings-dialog {
-    max-height: 85vh;
+    max-height: 88vh;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
+    border-top-left-radius: var(--radius-xl);
+    border-top-right-radius: var(--radius-xl);
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Chips pièces jointes */
+  .attachment-chip {
+    max-width: 140px;
   }
 }
 
+/* ── Petit mobile (≤ 480px) ── */
 @media (max-width: 480px) {
   .message-bubble {
     font-size: 13.5px;
-    padding: 10px 14px;
+    padding: 10px 13px;
   }
 
   .avatar {
@@ -1514,10 +1617,45 @@ input:checked + .slider:before {
     font-size: 12px;
   }
 
+  .message-body {
+    max-width: 92%;
+  }
+
   .welcome-title {
-    font-size: 22px;
+    font-size: 20px;
+  }
+
+  /* Masquer certains boutons header peu utilisés sur très petit écran */
+  #btnExportChat {
+    display: none;
+  }
+
+  .chat-header {
+    padding: 6px 10px;
+  }
+
+  .prompt-textarea {
+    font-size: 16px; /* évite le zoom auto iOS */
+  }
+
+  .input-box {
+    padding: 8px 10px;
   }
 }
+
+/* ── Safe area iPhone (encoche / Dynamic Island) ── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .input-area-wrapper {
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+  }
+
+  @media (max-width: 768px) {
+    .input-area-wrapper {
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+  }
+}
+
 
 /* Utilitaires */
 .hidden { display: none !important; }
